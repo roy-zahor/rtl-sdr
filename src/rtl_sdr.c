@@ -42,6 +42,7 @@
 static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
+static int is_recording = 0;
 
 void usage(void)
 {
@@ -78,6 +79,22 @@ static void sighandler(int signum)
 	do_exit = 1;
 	rtlsdr_cancel_async(dev);
 }
+
+static void sigusrhandler(int signum)
+{
+	if (signum == 10) // SIGUSR1
+	{
+		// Start recording to file
+		is_recording = 1;	
+		fprintf(stdout, "Got SIGUSR1\n");
+	}
+	else if (signum == 12) // SIGUSR2
+	{
+		// Stop recording to file
+		is_recording = 0;
+		fprintf(stdout, "Got SIGUSR2\n");
+	}
+}
 #endif
 
 static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
@@ -92,9 +109,12 @@ static void rtlsdr_callback(unsigned char *buf, uint32_t len, void *ctx)
 			rtlsdr_cancel_async(dev);
 		}
 
-		if (fwrite(buf, 1, len, (FILE*)ctx) != len) {
-			fprintf(stderr, "Short write, samples lost, exiting!\n");
-			rtlsdr_cancel_async(dev);
+		if (is_recording)
+		{
+			if (fwrite(buf, 1, len, (FILE*)ctx) != len) {
+				fprintf(stderr, "Short write, samples lost, exiting!\n");
+				rtlsdr_cancel_async(dev);
+			}
 		}
 
 		if (bytes_to_read > 0)
@@ -106,6 +126,7 @@ int main(int argc, char **argv)
 {
 #ifndef _WIN32
 	struct sigaction sigact;
+	struct sigaction sigusract;
 #endif
 	char *filename = NULL;
 	int n_read;
@@ -194,6 +215,12 @@ int main(int argc, char **argv)
 	sigaction(SIGTERM, &sigact, NULL);
 	sigaction(SIGQUIT, &sigact, NULL);
 	sigaction(SIGPIPE, &sigact, NULL);
+
+	sigusract.sa_handler = sigusrhandler;
+	sigemptyset(&sigusract.sa_mask);
+	sigusract.sa_flags = 0;
+	sigaction(SIGUSR1, &sigusract, NULL);
+	sigaction(SIGUSR2, &sigusract, NULL);
 #else
 	SetConsoleCtrlHandler( (PHANDLER_ROUTINE) sighandler, TRUE );
 #endif
