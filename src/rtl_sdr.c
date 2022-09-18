@@ -43,6 +43,9 @@ static int do_exit = 0;
 static uint32_t bytes_to_read = 0;
 static rtlsdr_dev_t *dev = NULL;
 static int is_recording = 0;
+static char s_filename[32];
+static FILE *file;
+
 
 void usage(void)
 {
@@ -93,6 +96,11 @@ static void sigusrhandler(int signum)
 		// Stop recording to file
 		is_recording = 0;
 		fprintf(stdout, "Got SIGUSR2\n");
+		fclose(file);
+		file = fopen(s_filename, "wb");
+		if (!file) {
+			fprintf(stderr, "Failed to open %s\n", s_filename);
+		}
 	}
 }
 #endif
@@ -134,7 +142,6 @@ int main(int argc, char **argv)
 	int gain = 0;
 	int ppm_error = 0;
 	int sync_mode = 0;
-	FILE *file;
 	uint8_t *buffer;
 	int dev_index = 0;
 	int dev_given = 0;
@@ -179,6 +186,7 @@ int main(int argc, char **argv)
 		usage();
 	} else {
 		filename = argv[optind];
+		strcpy(s_filename, filename);
 	}
 
 	if(out_block_size < MINIMAL_BUF_LENGTH ||
