@@ -279,9 +279,12 @@ int main(int argc, char **argv)
 				do_exit = 1;
 			}
 
-			if (fwrite(buffer, 1, n_read, file) != (size_t)n_read) {
-				fprintf(stderr, "Short write, samples lost, exiting!\n");
-				break;
+			if (is_recording)
+			{
+				if (fwrite(buffer, 1, n_read, file) != (size_t)n_read) {
+					fprintf(stderr, "Short write, samples lost, exiting!\n");
+					break;
+				}
 			}
 
 			if ((uint32_t)n_read < out_block_size) {
