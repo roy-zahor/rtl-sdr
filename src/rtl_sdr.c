@@ -90,6 +90,10 @@ static void sigusrhandler(int signum)
 		// Start recording to file
 		is_recording = 1;	
 		fprintf(stdout, "Got SIGUSR1\n");
+		file = fopen(s_filename, "wb");
+		if (!file) {
+			fprintf(stderr, "Failed to open %s\n", s_filename);
+		}
 	}
 	else if (signum == 12) // SIGUSR2
 	{
@@ -97,10 +101,6 @@ static void sigusrhandler(int signum)
 		is_recording = 0;
 		fprintf(stdout, "Got SIGUSR2\n");
 		fclose(file);
-		file = fopen(s_filename, "wb");
-		if (!file) {
-			fprintf(stderr, "Failed to open %s\n", s_filename);
-		}
 	}
 }
 #endif
@@ -255,11 +255,11 @@ int main(int argc, char **argv)
 		_setmode(_fileno(stdin), _O_BINARY);
 #endif
 	} else {
-		file = fopen(filename, "wb");
+		/*file = fopen(filename, "wb");
 		if (!file) {
 			fprintf(stderr, "Failed to open %s\n", filename);
 			goto out;
-		}
+		}*/
 	}
 
 	/* Reset endpoint before we start reading from it (mandatory) */
